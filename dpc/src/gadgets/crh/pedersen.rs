@@ -40,14 +40,14 @@ where
     GG: GroupGadget<G, E>,
     W: PedersenWindow,
 {
-    type OutputGadget = GG;
-    type ParametersGadget = PedersenCRHGadgetParameters<G, W, E, GG>;
+    type Output = GG;
+    type Parameters = PedersenCRHGadgetParameters<G, W, E, GG>;
 
-    fn check_evaluation_gadget<CS: ConstraintSystem<E>>(
+    fn check_evaluation<CS: ConstraintSystem<E>>(
         cs: CS,
-        parameters: &Self::ParametersGadget,
+        parameters: &Self::Parameters,
         input: &[UInt8],
-    ) -> Result<Self::OutputGadget, SynthesisError> {
+    ) -> Result<Self::Output, SynthesisError> {
         let mut padded_input = input.to_vec();
         // Pad the input if it is not the current length.
         if input.len() * 8 < W::WINDOW_SIZE * W::NUM_WINDOWS {
@@ -142,49 +142,6 @@ mod test {
         const NUM_WINDOWS: usize = 8;
     }
 
-    #[test]
-    fn num_constraints() {
-        let rng = &mut thread_rng();
-        let mut cs = TestConstraintSystem::<Bls12_381>::new();
-
-        let (_input, input_bytes) = generate_input(&mut cs, rng);
-        let input_constraints = cs.num_constraints();
-        println!("number of constraints for input: {}", cs.num_constraints());
-
-        let parameters = TestCRH::setup(rng).unwrap();
-
-        let gadget_parameters =
-            <TestCRHGadget as FixedLengthCRHGadget<TestCRH, Bls12_381>>::ParametersGadget::alloc(
-                &mut cs.ns(|| "gadget_parameters"),
-                || Ok(&parameters),
-            )
-            .unwrap();
-        let param_constraints = cs.num_constraints() - input_constraints;
-        println!(
-            "number of constraints for input + params: {}",
-            cs.num_constraints()
-        );
-
-        let _ =
-            <TestCRHGadget as FixedLengthCRHGadget<TestCRH, Bls12_381>>::check_evaluation_gadget(
-                &mut cs.ns(|| "gadget_evaluation"),
-                &gadget_parameters,
-                &input_bytes,
-            )
-            .unwrap();
-
-        println!("number of constraints total: {}", cs.num_constraints());
-        let eval_constraints = cs.num_constraints() - param_constraints - input_constraints;
-        assert_eq!(
-            <TestCRHGadget as FixedLengthCRHGadget<TestCRH, Bls12_381>>::cost(),
-            eval_constraints
-        );
-        assert_eq!(
-            <TestCRHGadget as FixedLengthCRHGadget<TestCRH, Bls12_381>>::cost(),
-            256 * (6 + 4 * (6 + 2))
-        );
-    }
-
     fn generate_input<CS: ConstraintSystem<Bls12_381>>(
         mut cs: CS,
         rng: &mut dyn Rng,
@@ -212,23 +169,18 @@ mod test {
         let primitive_result = TestCRH::evaluate(&parameters, &input).unwrap();
 
         let gadget_parameters =
-            <TestCRHGadget as FixedLengthCRHGadget<TestCRH, Bls12_381>>::ParametersGadget::alloc(
-                &mut cs.ns(|| "gadget_parameters"),
-                || Ok(&parameters),
-            )
-            .unwrap();
+            AllocGadget::alloc(&mut cs.ns(|| "gadget_parameters"), || Ok(&parameters)).unwrap();
         println!(
             "number of constraints for input + params: {}",
             cs.num_constraints()
         );
 
-        let gadget_result =
-            <TestCRHGadget as FixedLengthCRHGadget<TestCRH, Bls12_381>>::check_evaluation_gadget(
-                &mut cs.ns(|| "gadget_evaluation"),
-                &gadget_parameters,
-                &input_bytes,
-            )
-            .unwrap();
+        let gadget_result = <TestCRHGadget as FixedLengthCRHGadget<TestCRH, _>>::check_evaluation(
+            &mut cs.ns(|| "gadget_evaluation"),
+            &gadget_parameters,
+            &input_bytes,
+        )
+        .unwrap();
 
         println!("number of constraints total: {}", cs.num_constraints());
 

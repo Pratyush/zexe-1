@@ -11,7 +11,7 @@ use crate::{
     dpc::delegable_dpc::{
         AddressSecretKey, CommCRHSigPublicParameters, DPCRecord, DelegableDPCComponents,
     },
-    gadgets::dpc::delegable_dpc::execute_core_checks_gadget,
+    gadgets::dpc::delegable_dpc::execute_core_checks,
     ledger::LedgerDigest,
 };
 
@@ -252,7 +252,7 @@ impl<C: DelegableDPCComponents> CoreChecksCircuit<C> {
 
 impl<C: DelegableDPCComponents> Circuit<C::E> for CoreChecksCircuit<C> {
     fn synthesize<CS: ConstraintSystem<C::E>>(self, cs: &mut CS) -> Result<(), SynthesisError> {
-        execute_core_checks_gadget::<C, CS>(
+        execute_core_checks::<C, CS>(
             cs,
             // Params
             self.comm_crh_sig_parameters.get()?,

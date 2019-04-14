@@ -39,17 +39,17 @@ where
     IG: InjectiveMapGadget<G, I, E, GG>,
     W: PedersenWindow,
 {
-    type OutputGadget = IG::OutputGadget;
-    type ParametersGadget = PedersenCommitmentGadgetParameters<G, W, E>;
-    type RandomnessGadget = PedersenRandomnessGadget;
+    type Output = IG::Output;
+    type Parameters = PedersenCommitmentGadgetParameters<G, W, E>;
+    type Randomness = PedersenRandomnessGadget;
 
-    fn check_commitment_gadget<CS: ConstraintSystem<E>>(
+    fn check_commitment<CS: ConstraintSystem<E>>(
         mut cs: CS,
-        parameters: &Self::ParametersGadget,
+        parameters: &Self::Parameters,
         input: &[UInt8],
-        r: &Self::RandomnessGadget,
-    ) -> Result<Self::OutputGadget, SynthesisError> {
-        let result = PedersenCommitmentGadget::<G, E, GG>::check_commitment_gadget(
+        r: &Self::Randomness,
+    ) -> Result<Self::Output, SynthesisError> {
+        let result = PedersenCommitmentGadget::<G, E, GG>::check_commitment(
             cs.ns(|| "PedersenComm"),
             parameters,
             input,

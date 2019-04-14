@@ -14,19 +14,19 @@ use crate::ledger::{CommPath, Digest, LedgerDigest, LedgerWitness};
 use std::{borrow::Borrow, marker::PhantomData};
 
 pub trait LCWGadget<C: CommitmentScheme, D: LedgerDigest, CW: LedgerWitness<D>, E: PairingEngine> {
-    type ParametersGadget: AllocGadget<D::Parameters, E>;
-    type CommitmentGadget: AllocGadget<C::Output, E>;
-    type DigestGadget: AllocGadget<D, E>;
-    type WitnessGadget: AllocGadget<CW, E>;
+    type Parameters: AllocGadget<D::Parameters, E>;
+    type Commitment: AllocGadget<C::Output, E>;
+    type Digest: AllocGadget<D, E>;
+    type Witness: AllocGadget<CW, E>;
 
-    fn check_witness_gadget<CS: ConstraintSystem<E>>(
+    fn check_witness<CS: ConstraintSystem<E>>(
         cs: CS,
-        parameters: &Self::ParametersGadget,
-        ledger_state_digest: &Self::DigestGadget,
-        commitment: &Self::CommitmentGadget,
-        witness: &Self::WitnessGadget,
+        parameters: &Self::Parameters,
+        ledger_state_digest: &Self::Digest,
+        commitment: &Self::Commitment,
+        witness: &Self::Witness,
     ) -> Result<(), SynthesisError> {
-        Self::conditionally_check_witness_gadget(
+        Self::conditionally_check_witness(
             cs,
             parameters,
             ledger_state_digest,
@@ -36,12 +36,12 @@ pub trait LCWGadget<C: CommitmentScheme, D: LedgerDigest, CW: LedgerWitness<D>, 
         )
     }
 
-    fn conditionally_check_witness_gadget<CS: ConstraintSystem<E>>(
+    fn conditionally_check_witness<CS: ConstraintSystem<E>>(
         cs: CS,
-        parameters: &Self::ParametersGadget,
-        ledger_state_digest: &Self::DigestGadget,
-        commitment: &Self::CommitmentGadget,
-        witness: &Self::WitnessGadget,
+        parameters: &Self::Parameters,
+        ledger_state_digest: &Self::Digest,
+        commitment: &Self::Commitment,
+        witness: &Self::Witness,
         should_enforce: &Boolean,
     ) -> Result<(), SynthesisError>;
 }
@@ -59,14 +59,14 @@ pub struct CommitmentWitness<
     HGadget: FixedLengthCRHGadget<H, E>,
     E: PairingEngine,
 > {
-    path:    Vec<(HGadget::OutputGadget, HGadget::OutputGadget)>,
+    path:    Vec<(HGadget::Output, HGadget::Output)>,
     _crh:    PhantomData<H>,
     _comm:   PhantomData<C>,
     _engine: PhantomData<E>,
 }
 
 pub struct DigestGadget<H: FixedLengthCRH, HGadget: FixedLengthCRHGadget<H, E>, E: PairingEngine> {
-    digest:  HGadget::OutputGadget,
+    digest:  HGadget::Output,
     _crh:    PhantomData<H>,
     _engine: PhantomData<E>,
 }
@@ -81,21 +81,21 @@ where
     CGadget: CommitmentGadget<C, E>,
     HGadget: FixedLengthCRHGadget<H, E>,
 {
-    type ParametersGadget = <HGadget as FixedLengthCRHGadget<H, E>>::ParametersGadget;
-    type DigestGadget = DigestGadget<H, HGadget, E>;
+    type Parameters = <HGadget as FixedLengthCRHGadget<H, E>>::Parameters;
+    type Digest = DigestGadget<H, HGadget, E>;
 
-    type CommitmentGadget = <CGadget as CommitmentGadget<C, E>>::OutputGadget;
-    type WitnessGadget = CommitmentWitness<H, C, HGadget, E>;
+    type Commitment = <CGadget as CommitmentGadget<C, E>>::Output;
+    type Witness = CommitmentWitness<H, C, HGadget, E>;
 
     /// Given a `leaf` and `path`, check that the `path` is a valid
     /// authentication path for the `leaf` in a Merkle tree.
     /// Note: It is assumed that the root is contained in the `path`.
-    fn conditionally_check_witness_gadget<CS: ConstraintSystem<E>>(
+    fn conditionally_check_witness<CS: ConstraintSystem<E>>(
         mut cs: CS,
-        parameters: &Self::ParametersGadget,
-        root_hash: &Self::DigestGadget,
-        commitment: &Self::CommitmentGadget,
-        witness: &Self::WitnessGadget,
+        parameters: &Self::Parameters,
+        root_hash: &Self::Digest,
+        commitment: &Self::Commitment,
+        witness: &Self::Witness,
         should_enforce: &Boolean,
     ) -> Result<(), SynthesisError> {
         assert_eq!(
@@ -105,18 +105,15 @@ where
         // Check that the hash of the given leaf matches the leaf hash in the membership
         // proof.
         let commitment_bits = commitment.to_bytes(&mut cs.ns(|| "commitment_to_bytes"))?;
-        let commitment_hash = HGadget::check_evaluation_gadget(
-            cs.ns(|| "check_evaluation_gadget"),
-            parameters,
-            &commitment_bits,
-        )?;
+        let commitment_hash =
+            HGadget::check_evaluation(cs.ns(|| "check_evaluation"), parameters, &commitment_bits)?;
 
         // Check if leaf is one of the bottom-most siblings.
         let leaf_is_left = AllocatedBit::alloc(&mut cs.ns(|| "leaf_is_left"), || {
             Ok(commitment_hash == witness.path[0].0)
         })?
         .into();
-        <HGadget::OutputGadget>::conditional_enforce_equal_or(
+        <HGadget::Output>::conditional_enforce_equal_or(
             &mut cs.ns(|| "check_leaf_is_left"),
             &leaf_is_left,
             &commitment_hash,
@@ -135,7 +132,7 @@ where
                 })?
                 .into();
 
-            <HGadget::OutputGadget>::conditional_enforce_equal_or(
+            <HGadget::Output>::conditional_enforce_equal_or(
                 &mut cs.ns(|| format!("check_equals_which_{}", i)),
                 &previous_is_left,
                 &previous_hash,
@@ -144,7 +141,7 @@ where
                 should_enforce,
             )?;
 
-            previous_hash = hash_inner_node_gadget::<H, HGadget, E, _>(
+            previous_hash = hash_inner_node::<H, HGadget, E, _>(
                 &mut cs.ns(|| format!("hash_inner_node_{}", i)),
                 parameters,
                 left_hash,
@@ -160,12 +157,12 @@ where
     }
 }
 
-pub(crate) fn hash_inner_node_gadget<H, HG, E, CS>(
+pub(crate) fn hash_inner_node<H, HG, E, CS>(
     mut cs: CS,
-    parameters: &HG::ParametersGadget,
-    left_child: &HG::OutputGadget,
-    right_child: &HG::OutputGadget,
-) -> Result<HG::OutputGadget, SynthesisError>
+    parameters: &HG::Parameters,
+    left_child: &HG::Output,
+    right_child: &HG::Output,
+) -> Result<HG::Output, SynthesisError>
 where
     E: PairingEngine,
     CS: ConstraintSystem<E>,
@@ -177,7 +174,7 @@ where
     let mut bytes = left_bytes;
     bytes.extend_from_slice(&right_bytes);
 
-    HG::check_evaluation_gadget(cs, parameters, &bytes)
+    HG::check_evaluation(cs, parameters, &bytes)
 }
 
 impl<H, HGadget, E> AllocGadget<Digest<H>, E> for DigestGadget<H, HGadget, E>
@@ -194,7 +191,7 @@ where
         F: FnOnce() -> Result<T, SynthesisError>,
         T: Borrow<Digest<H>>,
     {
-        let digest = HGadget::OutputGadget::alloc(&mut cs.ns(|| "digest"), || {
+        let digest = HGadget::Output::alloc(&mut cs.ns(|| "digest"), || {
             Ok(value_gen()?.borrow().0.clone())
         })?;
 
@@ -213,7 +210,7 @@ where
         F: FnOnce() -> Result<T, SynthesisError>,
         T: Borrow<Digest<H>>,
     {
-        let digest = HGadget::OutputGadget::alloc_input(&mut cs.ns(|| "input_digest"), || {
+        let digest = HGadget::Output::alloc_input(&mut cs.ns(|| "input_digest"), || {
             Ok(value_gen()?.borrow().0.clone())
         })?;
         Ok(DigestGadget {
@@ -243,13 +240,9 @@ where
         let mut path = Vec::new();
         for (i, &(ref l, ref r)) in value_gen()?.borrow().0.path.iter().enumerate() {
             let l_hash =
-                HGadget::OutputGadget::alloc(&mut cs.ns(|| format!("l_child_{}", i)), || {
-                    Ok(l.clone())
-                })?;
+                HGadget::Output::alloc(&mut cs.ns(|| format!("l_child_{}", i)), || Ok(l.clone()))?;
             let r_hash =
-                HGadget::OutputGadget::alloc(&mut cs.ns(|| format!("r_child_{}", i)), || {
-                    Ok(r.clone())
-                })?;
+                HGadget::Output::alloc(&mut cs.ns(|| format!("r_child_{}", i)), || Ok(r.clone()))?;
             path.push((l_hash, r_hash));
         }
         Ok(CommitmentWitness {
@@ -270,14 +263,14 @@ where
     {
         let mut path = Vec::new();
         for (i, &(ref l, ref r)) in value_gen()?.borrow().0.path.iter().enumerate() {
-            let l_hash = HGadget::OutputGadget::alloc_input(
-                &mut cs.ns(|| format!("l_child_{}", i)),
-                || Ok(l.clone()),
-            )?;
-            let r_hash = HGadget::OutputGadget::alloc_input(
-                &mut cs.ns(|| format!("r_child_{}", i)),
-                || Ok(r.clone()),
-            )?;
+            let l_hash =
+                HGadget::Output::alloc_input(&mut cs.ns(|| format!("l_child_{}", i)), || {
+                    Ok(l.clone())
+                })?;
+            let r_hash =
+                HGadget::Output::alloc_input(&mut cs.ns(|| format!("r_child_{}", i)), || {
+                    Ok(r.clone())
+                })?;
             path.push((l_hash, r_hash));
         }
 
@@ -362,19 +355,18 @@ mod test {
             let constraints_from_digest = cs.num_constraints();
             println!("constraints from digest: {}", constraints_from_digest);
 
-            let crh_parameters =
-                <HG as FixedLengthCRHGadget<H, Bls12_381>>::ParametersGadget::alloc(
-                    &mut cs.ns(|| format!("new_parameters_{}", i)),
-                    || Ok(crh_parameters.clone()),
-                )
-                .unwrap();
+            let crh_parameters = <HG as FixedLengthCRHGadget<H, Bls12_381>>::Parameters::alloc(
+                &mut cs.ns(|| format!("new_parameters_{}", i)),
+                || Ok(crh_parameters.clone()),
+            )
+            .unwrap();
             let constraints_from_parameters = cs.num_constraints() - constraints_from_digest;
             println!(
                 "constraints from parameters: {}",
                 constraints_from_parameters
             );
 
-            let comm = <CG as CommitmentGadget<C, Bls12_381>>::OutputGadget::alloc(
+            let comm = <CG as CommitmentGadget<C, Bls12_381>>::Output::alloc(
                 &mut cs.ns(|| format!("new_comm_{}", i)),
                 || {
                     let leaf: JubJub = *leaf;
@@ -395,7 +387,7 @@ mod test {
                 - constraints_from_digest
                 - constraints_from_comm;
             println!("constraints from path: {}", constraints_from_path);
-            LG::check_witness_gadget(
+            LG::check_witness(
                 &mut cs.ns(|| format!("new_witness_check_{}", i)),
                 &crh_parameters,
                 &digest,
@@ -463,13 +455,12 @@ mod test {
                 Ok(Digest(JubJub::zero()))
             })
             .unwrap();
-            let crh_parameters =
-                <HG as FixedLengthCRHGadget<H, Bls12_381>>::ParametersGadget::alloc(
-                    &mut cs.ns(|| format!("new_parameters_{}", i)),
-                    || Ok(crh_parameters.clone()),
-                )
-                .unwrap();
-            let comm = <CG as CommitmentGadget<C, Bls12_381>>::OutputGadget::alloc(
+            let crh_parameters = <HG as FixedLengthCRHGadget<H, Bls12_381>>::Parameters::alloc(
+                &mut cs.ns(|| format!("new_parameters_{}", i)),
+                || Ok(crh_parameters.clone()),
+            )
+            .unwrap();
+            let comm = <CG as CommitmentGadget<C, Bls12_381>>::Output::alloc(
                 &mut cs.ns(|| format!("new_comm_{}", i)),
                 || {
                     let leaf = *leaf;
@@ -481,7 +472,7 @@ mod test {
                 Ok(CommPath(proof))
             })
             .unwrap();
-            LG::check_witness_gadget(
+            LG::check_witness(
                 &mut cs.ns(|| format!("new_witness_check_{}", i)),
                 &crh_parameters,
                 &digest,

@@ -10,14 +10,14 @@ use crate::crypto_primitives::signature::SignatureScheme;
 pub mod schnorr;
 
 pub trait SigRandomizePkGadget<S: SignatureScheme, E: PairingEngine> {
-    type ParametersGadget: AllocGadget<S::Parameters, E> + Clone;
+    type Parameters: AllocGadget<S::Parameters, E> + Clone;
 
-    type PublicKeyGadget: ToBytesGadget<E> + EqGadget<E> + AllocGadget<S::PublicKey, E> + Clone;
+    type PublicKey: ToBytesGadget<E> + EqGadget<E> + AllocGadget<S::PublicKey, E> + Clone;
 
-    fn check_randomization_gadget<CS: ConstraintSystem<E>>(
+    fn check_randomization<CS: ConstraintSystem<E>>(
         cs: CS,
-        parameters: &Self::ParametersGadget,
-        public_key: &Self::PublicKeyGadget,
+        parameters: &Self::Parameters,
+        public_key: &Self::PublicKey,
         randomness: &[UInt8],
-    ) -> Result<Self::PublicKeyGadget, SynthesisError>;
+    ) -> Result<Self::PublicKey, SynthesisError>;
 }

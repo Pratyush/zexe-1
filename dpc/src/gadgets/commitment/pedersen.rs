@@ -36,16 +36,16 @@ where
     GG: GroupGadget<G, E>,
     W: PedersenWindow,
 {
-    type OutputGadget = GG;
-    type ParametersGadget = PedersenCommitmentGadgetParameters<G, W, E>;
-    type RandomnessGadget = PedersenRandomnessGadget;
+    type Output = GG;
+    type Parameters = PedersenCommitmentGadgetParameters<G, W, E>;
+    type Randomness = PedersenRandomnessGadget;
 
-    fn check_commitment_gadget<CS: ConstraintSystem<E>>(
+    fn check_commitment<CS: ConstraintSystem<E>>(
         mut cs: CS,
-        parameters: &Self::ParametersGadget,
+        parameters: &Self::Parameters,
         input: &[UInt8],
-        r: &Self::RandomnessGadget,
-    ) -> Result<Self::OutputGadget, SynthesisError> {
+        r: &Self::Randomness,
+    ) -> Result<Self::Output, SynthesisError> {
         assert!((input.len() * 8) <= (W::WINDOW_SIZE * W::NUM_WINDOWS));
 
         let mut padded_input = input.to_vec();
@@ -213,19 +213,19 @@ mod test {
         }
 
         let randomness =
-            <TestCOMMGadget as CommitmentGadget<TestCOMM, Bls12_381>>::RandomnessGadget::alloc(
+            <TestCOMMGadget as CommitmentGadget<TestCOMM, Bls12_381>>::Randomness::alloc(
                 &mut cs.ns(|| "gadget_randomness"),
                 || Ok(&randomness),
             )
             .unwrap();
         let gadget_parameters =
-            <TestCOMMGadget as CommitmentGadget<TestCOMM, Bls12_381>>::ParametersGadget::alloc(
+            <TestCOMMGadget as CommitmentGadget<TestCOMM, Bls12_381>>::Parameters::alloc(
                 &mut cs.ns(|| "gadget_parameters"),
                 || Ok(&parameters),
             )
             .unwrap();
         let gadget_result =
-            <TestCOMMGadget as CommitmentGadget<TestCOMM, Bls12_381>>::check_commitment_gadget(
+            <TestCOMMGadget as CommitmentGadget<TestCOMM, Bls12_381>>::check_commitment(
                 &mut cs.ns(|| "gadget_evaluation"),
                 &gadget_parameters,
                 &input_bytes,

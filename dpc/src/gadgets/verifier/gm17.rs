@@ -112,14 +112,14 @@ where
     V: ToEngineFr<PairingE>,
     P: PairingGadget<PairingE, ConstraintE>,
 {
-    type VerificationKeyGadget = VerifyingKeyGadget<PairingE, ConstraintE, P>;
-    type ProofGadget = ProofGadget<PairingE, ConstraintE, P>;
+    type VerificationKey = VerifyingKeyGadget<PairingE, ConstraintE, P>;
+    type Proof = ProofGadget<PairingE, ConstraintE, P>;
 
-    fn check_verify<'a, CS, I, T>(
+    fn verify<'a, CS, I, T>(
         mut cs: CS,
-        vk: &Self::VerificationKeyGadget,
+        vk: &Self::VerificationKey,
         mut public_inputs: I,
-        proof: &Self::ProofGadget,
+        proof: &Self::Proof,
     ) -> Result<(), SynthesisError>
     where
         CS: ConstraintSystem<ConstraintE>,
@@ -527,7 +527,7 @@ mod test {
             let proof_gadget =
                 TestProofGadget::alloc(cs.ns(|| "Proof"), || Ok(proof.clone())).unwrap();
             println!("Time to verify!\n\n\n\n");
-            <TestVerifierGadget as NIZKVerifierGadget<TestProofSystem, SW6>>::check_verify(
+            <TestVerifierGadget as NIZKVerifierGadget<TestProofSystem, SW6>>::verify(
                 cs.ns(|| "Verify"),
                 &vk_gadget,
                 input_gadgets.iter(),

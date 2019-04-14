@@ -12,13 +12,13 @@ use snark_gadgets::{
 pub mod blake2s;
 
 pub trait PRFGadget<P: PRF, E: PairingEngine> {
-    type OutputGadget: EqGadget<E> + ToBytesGadget<E> + AllocGadget<P::Output, E> + Clone + Debug;
+    type Output: EqGadget<E> + ToBytesGadget<E> + AllocGadget<P::Output, E> + Clone + Debug;
 
     fn new_seed<CS: ConstraintSystem<E>>(cs: CS, output: &P::Seed) -> Vec<UInt8>;
 
-    fn check_evaluation_gadget<CS: ConstraintSystem<E>>(
+    fn check_evaluation<CS: ConstraintSystem<E>>(
         cs: CS,
         seed: &[UInt8],
         input: &[UInt8],
-    ) -> Result<Self::OutputGadget, SynthesisError>;
+    ) -> Result<Self::Output, SynthesisError>;
 }

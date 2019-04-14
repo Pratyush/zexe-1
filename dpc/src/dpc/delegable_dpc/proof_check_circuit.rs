@@ -9,7 +9,7 @@ use crate::{
 
 use crate::{
     dpc::delegable_dpc::{CommCRHSigPublicParameters, DelegableDPCComponents, PrivatePredInput},
-    gadgets::dpc::delegable_dpc::execute_proof_check_gadget,
+    gadgets::dpc::delegable_dpc::execute_proof_check,
 };
 
 use algebra::utils::ToEngineFr;
@@ -149,7 +149,7 @@ where
         self,
         cs: &mut CS,
     ) -> Result<(), SynthesisError> {
-        execute_proof_check_gadget::<C, CS>(
+        execute_proof_check::<C, CS>(
             cs,
             self.comm_crh_sig_parameters.get()?,
             self.old_private_pred_inputs.get()?.as_slice(),

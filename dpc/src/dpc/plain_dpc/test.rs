@@ -11,7 +11,7 @@ use crate::crypto_primitives::FixedLengthCRH;
 
 use snark::ConstraintSystem;
 
-use crate::gadgets::dpc::plain_dpc::{execute_core_checks_gadget, execute_proof_check_gadget};
+use crate::gadgets::dpc::plain_dpc::{execute_core_checks, execute_proof_check};
 use snark_gadgets::test_constraint_system::TestConstraintSystem;
 
 use crate::dpc::{
@@ -134,7 +134,7 @@ fn test_execute_constraint_systems() {
     // Check that the core check constraint system was satisfied.
     let mut core_cs = TestConstraintSystem::<Bls12_377>::new();
 
-    execute_core_checks_gadget::<_, _>(
+    execute_core_checks::<_, _>(
         &mut core_cs.ns(|| "Core checks"),
         &comm_and_crh_pp,
         ledger.parameters(),
@@ -219,7 +219,7 @@ fn test_execute_constraint_systems() {
         new_proof_and_vk.push(private_input);
     }
 
-    execute_proof_check_gadget::<_, _>(
+    execute_proof_check::<_, _>(
         &mut pf_check_cs.ns(|| "Check predicate proofs"),
         &comm_and_crh_pp,
         &old_proof_and_vk,

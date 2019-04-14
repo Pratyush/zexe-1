@@ -61,15 +61,15 @@ where
     D: Digest + Send + Sync,
     E: PairingEngine,
 {
-    type ParametersGadget = SchnorrSigGadgetParameters<G, E, GG>;
-    type PublicKeyGadget = SchnorrSigGadgetPk<G, E, GG>;
+    type Parameters = SchnorrSigGadgetParameters<G, E, GG>;
+    type PublicKey = SchnorrSigGadgetPk<G, E, GG>;
 
-    fn check_randomization_gadget<CS: ConstraintSystem<E>>(
+    fn check_randomization<CS: ConstraintSystem<E>>(
         mut cs: CS,
-        parameters: &Self::ParametersGadget,
-        public_key: &Self::PublicKeyGadget,
+        parameters: &Self::Parameters,
+        public_key: &Self::PublicKey,
         randomness: &[UInt8],
-    ) -> Result<Self::PublicKeyGadget, SynthesisError> {
+    ) -> Result<Self::PublicKey, SynthesisError> {
         let base = parameters.generator.clone();
         let randomness = randomness
             .iter()

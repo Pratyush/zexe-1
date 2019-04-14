@@ -7,15 +7,15 @@ use snark_gadgets::utils::{AllocGadget, ToBitsGadget, ToBytesGadget};
 pub mod gm17;
 
 pub trait NIZKVerifierGadget<N: NIZK, E: PairingEngine> {
-    type VerificationKeyGadget: AllocGadget<N::VerificationParameters, E> + ToBytesGadget<E>;
+    type VerificationKey: AllocGadget<N::VerificationParameters, E> + ToBytesGadget<E>;
 
-    type ProofGadget: AllocGadget<N::Proof, E>;
+    type Proof: AllocGadget<N::Proof, E>;
 
-    fn check_verify<'a, CS, I, T>(
+    fn verify<'a, CS, I, T>(
         cs: CS,
-        verification_key: &Self::VerificationKeyGadget,
+        verification_key: &Self::VerificationKey,
         input: I,
-        proof: &Self::ProofGadget,
+        proof: &Self::Proof,
     ) -> Result<(), SynthesisError>
     where
         CS: ConstraintSystem<E>,

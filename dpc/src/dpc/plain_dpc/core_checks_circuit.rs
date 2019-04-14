@@ -9,7 +9,7 @@ use crate::{
 
 use crate::{
     dpc::plain_dpc::{AddressSecretKey, CommAndCRHPublicParameters, DPCRecord, PlainDPCComponents},
-    gadgets::dpc::plain_dpc::execute_core_checks_gadget,
+    gadgets::dpc::plain_dpc::execute_core_checks,
     ledger::LedgerDigest,
 };
 
@@ -247,7 +247,7 @@ impl<C: PlainDPCComponents> CoreChecksCircuit<C> {
 
 impl<C: PlainDPCComponents> Circuit<C::E> for CoreChecksCircuit<C> {
     fn synthesize<CS: ConstraintSystem<C::E>>(self, cs: &mut CS) -> Result<(), SynthesisError> {
-        execute_core_checks_gadget::<C, CS>(
+        execute_core_checks::<C, CS>(
             cs,
             // Params
             self.comm_and_crh_parameters.get()?,

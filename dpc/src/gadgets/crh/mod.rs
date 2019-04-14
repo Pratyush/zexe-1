@@ -13,7 +13,7 @@ pub mod injective_map;
 pub mod pedersen;
 
 pub trait FixedLengthCRHGadget<H: FixedLengthCRH, E: PairingEngine>: Sized {
-    type OutputGadget: ConditionalEqGadget<E>
+    type Output: ConditionalEqGadget<E>
         + EqGadget<E>
         + ToBytesGadget<E>
         + CondSelectGadget<E>
@@ -21,13 +21,13 @@ pub trait FixedLengthCRHGadget<H: FixedLengthCRH, E: PairingEngine>: Sized {
         + Debug
         + Clone
         + Sized;
-    type ParametersGadget: AllocGadget<H::Parameters, E> + Clone;
+    type Parameters: AllocGadget<H::Parameters, E> + Clone;
 
-    fn check_evaluation_gadget<CS: ConstraintSystem<E>>(
+    fn check_evaluation<CS: ConstraintSystem<E>>(
         cs: CS,
-        parameters: &Self::ParametersGadget,
+        parameters: &Self::Parameters,
         input: &[UInt8],
-    ) -> Result<Self::OutputGadget, SynthesisError>;
+    ) -> Result<Self::Output, SynthesisError>;
 
     fn cost() -> usize;
 }

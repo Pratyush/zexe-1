@@ -21,16 +21,16 @@ pub struct Blake2sRandomnessGadget(pub Vec<UInt8>);
 pub struct Blake2sCommitmentGadget;
 
 impl<E: PairingEngine> CommitmentGadget<Blake2sCommitment, E> for Blake2sCommitmentGadget {
-    type OutputGadget = Blake2sOutputGadget;
-    type ParametersGadget = Blake2sParametersGadget;
-    type RandomnessGadget = Blake2sRandomnessGadget;
+    type Output = Blake2sOutputGadget;
+    type Parameters = Blake2sParametersGadget;
+    type Randomness = Blake2sRandomnessGadget;
 
-    fn check_commitment_gadget<CS: ConstraintSystem<E>>(
+    fn check_commitment<CS: ConstraintSystem<E>>(
         mut cs: CS,
-        _: &Self::ParametersGadget,
+        _: &Self::Parameters,
         input: &[UInt8],
-        r: &Self::RandomnessGadget,
-    ) -> Result<Self::OutputGadget, SynthesisError> {
+        r: &Self::Randomness,
+    ) -> Result<Self::Output, SynthesisError> {
         let mut input_bits = Vec::with_capacity(512);
         for byte in input.into_iter().chain(r.0.iter()) {
             input_bits.extend_from_slice(&byte.into_bits_le());
@@ -150,13 +150,13 @@ mod test {
         let randomness_bytes = Blake2sRandomnessGadget(randomness_bytes);
 
         let gadget_parameters =
-            <TestCOMMGadget as CommitmentGadget<TestCOMM, Bls12_381>>::ParametersGadget::alloc(
+            <TestCOMMGadget as CommitmentGadget<TestCOMM, Bls12_381>>::Parameters::alloc(
                 &mut cs.ns(|| "gadget_parameters"),
                 || Ok(&parameters),
             )
             .unwrap();
         let gadget_result =
-            <TestCOMMGadget as CommitmentGadget<TestCOMM, Bls12_381>>::check_commitment_gadget(
+            <TestCOMMGadget as CommitmentGadget<TestCOMM, Bls12_381>>::check_commitment(
                 &mut cs.ns(|| "gadget_evaluation"),
                 &gadget_parameters,
                 &input_bytes,

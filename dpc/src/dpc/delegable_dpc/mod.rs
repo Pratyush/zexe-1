@@ -121,7 +121,7 @@ pub trait DelegableDPCComponents: 'static + Sized {
         Self::D,
         Self::LCW,
         Self::E,
-        CommitmentGadget = <Self::RecCGadget as CommitmentGadget<Self::RecC, Self::E>>::OutputGadget,
+        Commitment = <Self::RecCGadget as CommitmentGadget<Self::RecC, Self::E>>::Output,
     >;
 
     // PRF for computing serial numbers. Invoked only over `Self::E`.

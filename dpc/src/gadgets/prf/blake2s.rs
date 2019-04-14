@@ -467,17 +467,17 @@ impl<E: PairingEngine> AllocGadget<[u8; 32], E> for Blake2sOutputGadget {
 }
 
 impl<E: PairingEngine> PRFGadget<Blake2s, E> for Blake2sGadget {
-    type OutputGadget = Blake2sOutputGadget;
+    type Output = Blake2sOutputGadget;
 
     fn new_seed<CS: ConstraintSystem<E>>(mut cs: CS, seed: &[u8; 32]) -> Vec<UInt8> {
         UInt8::alloc_vec(&mut cs.ns(|| "alloc_seed"), seed).unwrap()
     }
 
-    fn check_evaluation_gadget<CS: ConstraintSystem<E>>(
+    fn check_evaluation<CS: ConstraintSystem<E>>(
         mut cs: CS,
         seed: &[UInt8],
         input: &[UInt8],
-    ) -> Result<Self::OutputGadget, SynthesisError> {
+    ) -> Result<Self::Output, SynthesisError> {
         assert_eq!(seed.len(), 32);
         // assert_eq!(input.len(), 32);
         let mut gadget_input = Vec::with_capacity(512);
@@ -548,13 +548,13 @@ mod test {
         let seed_gadget = Blake2sGadget::new_seed(&mut cs.ns(|| "declare_seed"), &seed);
         let input_gadget = UInt8::alloc_vec(&mut cs.ns(|| "declare_input"), &input).unwrap();
         let out = B2SPRF::evaluate(&seed, &input).unwrap();
-        let actual_out_gadget = <Blake2sGadget as PRFGadget<_, Bls12_377>>::OutputGadget::alloc(
+        let actual_out_gadget = <Blake2sGadget as PRFGadget<_, Bls12_377>>::Output::alloc(
             &mut cs.ns(|| "declare_output"),
             || Ok(out),
         )
         .unwrap();
 
-        let output_gadget = Blake2sGadget::check_evaluation_gadget(
+        let output_gadget = Blake2sGadget::check_evaluation(
             &mut cs.ns(|| "eval_blake2s"),
             &seed_gadget,
             &input_gadget,

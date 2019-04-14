@@ -27,7 +27,7 @@ use crate::crypto_primitives::crh::{
 
 pub trait InjectiveMapGadget<G: Group, I: InjectiveMap<G>, E: PairingEngine, GG: GroupGadget<G, E>>
 {
-    type OutputGadget: EqGadget<E>
+    type Output: EqGadget<E>
         + ToBytesGadget<E>
         + CondSelectGadget<E>
         + AllocGadget<I::Output, E>
@@ -38,7 +38,7 @@ pub trait InjectiveMapGadget<G: Group, I: InjectiveMap<G>, E: PairingEngine, GG:
     fn evaluate_map<CS: ConstraintSystem<E>>(
         cs: CS,
         ge: &GG,
-    ) -> Result<Self::OutputGadget, SynthesisError>;
+    ) -> Result<Self::Output, SynthesisError>;
     fn cost() -> usize;
 }
 
@@ -50,12 +50,12 @@ where
     E: PairingEngine,
     P: TEModelParameters + ModelParameters<BaseField = E::Fr>,
 {
-    type OutputGadget = FpGadget<E>;
+    type Output = FpGadget<E>;
 
     fn evaluate_map<CS: ConstraintSystem<E>>(
         _cs: CS,
         ge: &TwistedEdwardsGadget<P, E, FpGadget<E>>,
-    ) -> Result<Self::OutputGadget, SynthesisError> {
+    ) -> Result<Self::Output, SynthesisError> {
         Ok(ge.x.clone())
     }
 
@@ -71,12 +71,12 @@ where
     E: PairingEngine,
     P: TEModelParameters + ModelParameters<BaseField = E::Fr>,
 {
-    type OutputGadget = FpGadget<E>;
+    type Output = FpGadget<E>;
 
     fn evaluate_map<CS: ConstraintSystem<E>>(
         _cs: CS,
         ge: &TwistedEdwardsGadget<P, E, FpGadget<E>>,
-    ) -> Result<Self::OutputGadget, SynthesisError> {
+    ) -> Result<Self::Output, SynthesisError> {
         Ok(ge.x.clone())
     }
 
@@ -107,19 +107,16 @@ where
     IG: InjectiveMapGadget<G, I, E, GG>,
     W: PedersenWindow,
 {
-    type OutputGadget = IG::OutputGadget;
-    type ParametersGadget = PedersenCRHGadgetParameters<G, W, E, GG>;
+    type Output = IG::Output;
+    type Parameters = PedersenCRHGadgetParameters<G, W, E, GG>;
 
-    fn check_evaluation_gadget<CS: ConstraintSystem<E>>(
+    fn check_evaluation<CS: ConstraintSystem<E>>(
         mut cs: CS,
-        parameters: &Self::ParametersGadget,
+        parameters: &Self::Parameters,
         input: &[UInt8],
-    ) -> Result<Self::OutputGadget, SynthesisError> {
-        let result = PedersenCRHGadget::<G, E, GG>::check_evaluation_gadget(
-            cs.ns(|| "PedCRH"),
-            parameters,
-            input,
-        )?;
+    ) -> Result<Self::Output, SynthesisError> {
+        let result =
+            PedersenCRHGadget::<G, E, GG>::check_evaluation(cs.ns(|| "PedCRH"), parameters, input)?;
         IG::evaluate_map(cs.ns(|| "InjectiveMap"), &result)
     }
 

@@ -162,7 +162,7 @@ impl<C: PlainDPCComponents> Circuit<C::E> for EmptyPredicateCircuit<C> {
         let _position = UInt8::alloc_input_vec(cs.ns(|| "Alloc position"), &[self.position])?;
 
         let _local_data_comm_pp =
-            <C::LocalDataCommGadget as CommitmentGadget<_, _>>::ParametersGadget::alloc_input(
+            <C::LocalDataCommGadget as CommitmentGadget<_, _>>::Parameters::alloc_input(
                 &mut cs.ns(|| "Declare Pred Input Comm parameters"),
                 || {
                     self.comm_and_crh_parameters
@@ -172,7 +172,7 @@ impl<C: PlainDPCComponents> Circuit<C::E> for EmptyPredicateCircuit<C> {
             )?;
 
         let _local_data_comm =
-            <C::LocalDataCommGadget as CommitmentGadget<_, _>>::OutputGadget::alloc_input(
+            <C::LocalDataCommGadget as CommitmentGadget<_, _>>::Output::alloc_input(
                 cs.ns(|| "Allocate predicate commitment"),
                 || self.local_data_comm.get(),
             )?;

@@ -12,19 +12,14 @@ pub mod injective_map;
 pub mod pedersen;
 
 pub trait CommitmentGadget<C: CommitmentScheme, E: PairingEngine> {
-    type OutputGadget: EqGadget<E>
-        + ToBytesGadget<E>
-        + AllocGadget<C::Output, E>
-        + Clone
-        + Sized
-        + Debug;
-    type ParametersGadget: AllocGadget<C::Parameters, E> + Clone;
-    type RandomnessGadget: AllocGadget<C::Randomness, E> + Clone;
+    type Output: EqGadget<E> + ToBytesGadget<E> + AllocGadget<C::Output, E> + Clone + Sized + Debug;
+    type Parameters: AllocGadget<C::Parameters, E> + Clone;
+    type Randomness: AllocGadget<C::Randomness, E> + Clone;
 
-    fn check_commitment_gadget<CS: ConstraintSystem<E>>(
+    fn check_commitment<CS: ConstraintSystem<E>>(
         cs: CS,
-        parameters: &Self::ParametersGadget,
+        parameters: &Self::Parameters,
         input: &[UInt8],
-        r: &Self::RandomnessGadget,
-    ) -> Result<Self::OutputGadget, SynthesisError>;
+        r: &Self::Randomness,
+    ) -> Result<Self::Output, SynthesisError>;
 }
