@@ -116,29 +116,40 @@ where
     }
 }
 
-impl<E: PairingEngine> ToEngineFr<E> for [u8] {
-    #[inline]
-    fn to_engine_fr(&self) -> Result<Vec<E::Fr>, Error> {
-        let max_size = <E::Fr as PrimeField>::Params::CAPACITY / 8;
-        let max_size = max_size as usize;
-        let fes = self
-            .chunks(max_size)
-            .map(|chunk| {
-                let mut chunk = chunk.to_vec();
-                let len = chunk.len();
-                for _ in len..(max_size + 1) {
-                    chunk.push(0u8);
-                }
-                E::Fr::read(chunk.as_slice())
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        Ok(fes)
+macro_rules! impl_for_uint {
+    ($plain:ident, $width:expr) => {
+        impl<E: PairingEngine> ToEngineFr<E> for [$plain] {
+            #[inline]
+            fn to_engine_fr(&self) -> Result<Vec<E::Fr>, Error> {
+                use crate::bytes::ToBytes;
+                let max_size = <E::Fr as PrimeField>::Params::CAPACITY / $width;
+                let max_size = max_size as usize;
+                let fes = self
+                    .chunks(max_size)
+                    .map(|chunk| {
+                        let mut chunk = chunk.to_vec();
+                        let len = chunk.len();
+                        for _ in len..(max_size + 1) {
+                            chunk.push(0);
+                        }
+                        let bytes = to_bytes![chunk]?;
+                        E::Fr::read(bytes.as_slice())
+                    })
+                .collect::<Result<Vec<_>, _>>()?;
+                Ok(fes)
+            }
+        }
+
+        impl<E: PairingEngine> ToEngineFr<E> for [$plain; 32] {
+            #[inline]
+            fn to_engine_fr(&self) -> Result<Vec<E::Fr>, Error> {
+                ToEngineFr::<E>::to_engine_fr(self.as_ref())
+            }
+        }
     }
 }
 
-impl<E: PairingEngine> ToEngineFr<E> for [u8; 32] {
-    #[inline]
-    fn to_engine_fr(&self) -> Result<Vec<E::Fr>, Error> {
-        ToEngineFr::<E>::to_engine_fr(self.as_ref())
-    }
-}
+impl_for_uint!(u8, 8);
+impl_for_uint!(u16, 16);
+impl_for_uint!(u32, 32);
+impl_for_uint!(u64, 64);

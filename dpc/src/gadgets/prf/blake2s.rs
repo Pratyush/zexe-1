@@ -95,16 +95,16 @@ fn mixing_g<E: PairingEngine, CS: ConstraintSystem<E>>(
         cs.ns(|| "mixing step 1"),
         &[v[a].clone(), v[b].clone(), x.clone()],
     )?;
-    v[d] = v[d].xor(cs.ns(|| "mixing step 2"), &v[a])?.rotr(R1);
+    v[d] = v[d].xor(cs.ns(|| "mixing step 2"), &v[a])?.rotate_right(R1);
     v[c] = UInt32::addmany(cs.ns(|| "mixing step 3"), &[v[c].clone(), v[d].clone()])?;
-    v[b] = v[b].xor(cs.ns(|| "mixing step 4"), &v[c])?.rotr(R2);
+    v[b] = v[b].xor(cs.ns(|| "mixing step 4"), &v[c])?.rotate_right(R2);
     v[a] = UInt32::addmany(
         cs.ns(|| "mixing step 5"),
         &[v[a].clone(), v[b].clone(), y.clone()],
     )?;
-    v[d] = v[d].xor(cs.ns(|| "mixing step 6"), &v[a])?.rotr(R3);
+    v[d] = v[d].xor(cs.ns(|| "mixing step 6"), &v[a])?.rotate_right(R3);
     v[c] = UInt32::addmany(cs.ns(|| "mixing step 7"), &[v[c].clone(), v[d].clone()])?;
-    v[b] = v[b].xor(cs.ns(|| "mixing step 8"), &v[c])?.rotr(R4);
+    v[b] = v[b].xor(cs.ns(|| "mixing step 8"), &v[c])?.rotate_right(R4);
 
     Ok(())
 }
@@ -482,7 +482,7 @@ impl<E: PairingEngine> PRFGadget<Blake2s, E> for Blake2sGadget {
         // assert_eq!(input.len(), 32);
         let mut gadget_input = Vec::with_capacity(512);
         for byte in seed.into_iter().chain(input) {
-            gadget_input.extend_from_slice(&byte.into_bits_le());
+            gadget_input.extend_from_slice(&byte.to_bits_le());
         }
         let mut result = Vec::new();
         for (i, int) in blake2s_gadget(cs.ns(|| "Blake2s Eval"), &gadget_input)?

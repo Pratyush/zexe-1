@@ -115,7 +115,7 @@ impl<E: PairingEngine> ToBitsGadget<E> for [UInt8] {
     fn to_bits<CS: ConstraintSystem<E>>(&self, _cs: CS) -> Result<Vec<Boolean>, SynthesisError> {
         let mut result = Vec::with_capacity(&self.len() * 8);
         for byte in self {
-            result.extend_from_slice(&byte.into_bits_le());
+            result.extend_from_slice(&byte.to_bits_le());
         }
         Ok(result)
     }

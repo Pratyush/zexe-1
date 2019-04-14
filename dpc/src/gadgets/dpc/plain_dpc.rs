@@ -747,11 +747,11 @@ where
     let pred_input_bits = [
         pred_input_bytes[0]
             .iter()
-            .flat_map(|byte| byte.into_bits_le())
+            .flat_map(|byte| byte.to_bits_le())
             .collect::<Vec<_>>(),
         pred_input_bytes[1]
             .iter()
-            .flat_map(|byte| byte.into_bits_le())
+            .flat_map(|byte| byte.to_bits_le())
             .collect::<Vec<_>>(),
     ];
     // ************************************************************************
@@ -786,7 +786,7 @@ where
 
         old_death_pred_hashes.push(claimed_death_pred_hash_bytes);
 
-        let position = UInt8::constant(i as u8).into_bits_le();
+        let position = UInt8::constant(i as u8).to_bits_le();
         C::PredicateNIZKGadget::verify(
             &mut cs.ns(|| "Check that proof is satisfied"),
             &death_pred_vk,
@@ -824,7 +824,7 @@ where
 
         new_birth_pred_hashes.push(claimed_birth_pred_hash_bytes);
 
-        let position = UInt8::constant(j as u8).into_bits_le();
+        let position = UInt8::constant(j as u8).to_bits_le();
         C::PredicateNIZKGadget::verify(
             &mut cs.ns(|| "Check that proof is satisfied"),
             &birth_pred_vk,

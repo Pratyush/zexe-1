@@ -62,7 +62,7 @@ where
         // Allocate new variable for the result.
         let input_in_bits: Vec<_> = padded_input
             .iter()
-            .flat_map(|byte| byte.into_bits_le())
+            .flat_map(|byte| byte.to_bits_le())
             .collect();
         let input_in_bits = input_in_bits.chunks(W::WINDOW_SIZE);
         let result =

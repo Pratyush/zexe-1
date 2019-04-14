@@ -73,7 +73,7 @@ where
         let base = parameters.generator.clone();
         let randomness = randomness
             .iter()
-            .flat_map(|b| b.into_bits_le())
+            .flat_map(|b| b.to_bits_le())
             .collect::<Vec<_>>();
         let rand_pk = base.mul_bits(
             &mut cs.ns(|| "Compute Randomizer"),

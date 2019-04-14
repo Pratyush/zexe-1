@@ -33,7 +33,7 @@ impl<E: PairingEngine> CommitmentGadget<Blake2sCommitment, E> for Blake2sCommitm
     ) -> Result<Self::Output, SynthesisError> {
         let mut input_bits = Vec::with_capacity(512);
         for byte in input.into_iter().chain(r.0.iter()) {
-            input_bits.extend_from_slice(&byte.into_bits_le());
+            input_bits.extend_from_slice(&byte.to_bits_le());
         }
         let mut result = Vec::new();
         for (i, int) in blake2s_gadget(cs.ns(|| "Blake2s Eval"), &input_bits)?

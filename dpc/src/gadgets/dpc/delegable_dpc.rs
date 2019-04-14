@@ -772,7 +772,7 @@ where
     // Then we chunk up the input back into chunks of bytes,
     // such that each chunk corresponds to one of the field elements from above.
     let local_data_bits: Vec<_> = local_data_alloc_bytes.into_iter()
-        .flat_map(|byte| byte.into_bits_le())
+        .flat_map(|byte| byte.to_bits_le())
         .collect::<Vec<_>>()
         // We construct chunks that are equal to the size of underlying
         // BigInteger
@@ -813,7 +813,7 @@ where
 
         old_death_pred_hashes.push(claimed_death_pred_hash_bytes);
 
-        let position = UInt8::constant(i as u8).into_bits_le();
+        let position = UInt8::constant(i as u8).to_bits_le();
         C::PredicateNIZKGadget::verify(
             &mut cs.ns(|| "Check that proof is satisfied"),
             &death_pred_vk,
@@ -849,7 +849,7 @@ where
 
         new_birth_pred_hashes.push(claimed_birth_pred_hash_bytes);
 
-        let position = UInt8::constant(j as u8).into_bits_le();
+        let position = UInt8::constant(j as u8).to_bits_le();
         C::PredicateNIZKGadget::verify(
             &mut cs.ns(|| "Check that proof is satisfied"),
             &birth_pred_vk,

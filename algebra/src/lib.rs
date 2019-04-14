@@ -37,7 +37,7 @@
 #[macro_use]
 extern crate derivative;
 
-#[cfg_attr(test, macro_use)]
+#[macro_use]
 pub mod bytes;
 pub use self::bytes::*;
 
